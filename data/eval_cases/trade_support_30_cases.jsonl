@@ -1,0 +1,30 @@
+{"id":"OEM-01","query":"로고 들어간 의류 라벨 3만 개 제작하고 싶은데 가능한가요?","intent":"oem_odm","required_keywords":["로고/라벨 파일","예상 수량","희망 납기"],"risk_topic":"supplier_confirmation"}
+{"id":"OEM-02","query":"화장품 용기 OEM 제작 문의입니다. 샘플은 있고 5천개 정도 생각합니다.","intent":"oem_odm","required_keywords":["제품명","사진/도면/레퍼런스","배송지"],"risk_topic":"certification"}
+{"id":"OEM-03","query":"중국 공장에서 우리 브랜드 박스 패키지 제작 가능한지 알고 싶어요.","intent":"oem_odm","required_keywords":["사진/도면/레퍼런스","예상 수량","로고/라벨 파일"],"risk_topic":"supplier_confirmation"}
+{"id":"OEM-04","query":"플라스틱 부품을 도면대로 생산하고 싶은데 MOQ가 궁금합니다.","intent":"oem_odm","required_keywords":["사진/도면/레퍼런스","재질","예상 수량"],"risk_topic":"supplier_confirmation"}
+{"id":"OEM-05","query":"애견용품에 로고 인쇄해서 수입하고 싶습니다. 일정은 한 달 정도입니다.","intent":"oem_odm","required_keywords":["제품명","예상 수량","배송지"],"risk_topic":"customs"}
+{"id":"OEM-06","query":"의류 부자재를 맞춤 제작하려고 합니다. 견적 받으려면 뭐가 필요해요?","intent":"oem_odm","required_keywords":["제품명","사진/도면/레퍼런스","예상 수량"],"risk_topic":"supplier_confirmation"}
+{"id":"BUY-01","query":"1688 링크가 있는데 한국까지 구매대행 가능한가요? 수량은 500개입니다.","intent":"purchasing_agent","required_keywords":["상품 URL","옵션/색상/규격","배송지"],"risk_topic":"supplier_confirmation"}
+{"id":"BUY-02","query":"타오바오 상품 100개 사입해서 검품 후 보내고 싶습니다.","intent":"purchasing_agent","required_keywords":["상품 URL","옵션/색상/규격","배송지"],"risk_topic":"inspection"}
+{"id":"BUY-03","query":"중국 사이트에서 찾은 제품 가격이 맞는지 확인하고 구매대행 견적 받고 싶어요.","intent":"purchasing_agent","required_keywords":["상품 URL","수량","배송지"],"risk_topic":"supplier_confirmation"}
+{"id":"BUY-04","query":"알리바바 공급처가 있는데 대신 연락해서 단가 확인해주실 수 있나요?","intent":"purchasing_agent","required_keywords":["상품 URL","수량","옵션/색상/규격"],"risk_topic":"supplier_confirmation"}
+{"id":"BUY-05","query":"부품 2천개 구매대행하려고 하는데 불량 검수도 가능한가요?","intent":"purchasing_agent","required_keywords":["상품 URL","옵션/색상/규격","배송지"],"risk_topic":"inspection"}
+{"id":"BUY-06","query":"중국 공구 제품을 소량으로 먼저 사보고 싶습니다.","intent":"purchasing_agent","required_keywords":["제품명","수량","배송지"],"risk_topic":"customs"}
+{"id":"MKT-01","query":"이우시장에 있는 판촉물 가격 조사 가능할까요?","intent":"market_research","required_keywords":["제품명","목표 단가","예상 수량"],"risk_topic":"supplier_confirmation"}
+{"id":"MKT-02","query":"중국에서 판매되는 캠핑용품 공급처를 조사해 주세요.","intent":"market_research","required_keywords":["제품명","조사 목적","예상 수량"],"risk_topic":"customs"}
+{"id":"MKT-03","query":"신제품 후보로 생활용품 시장조사를 맡기고 싶습니다.","intent":"market_research","required_keywords":["제품명","목표 단가","조사 목적"],"risk_topic":"supplier_confirmation"}
+{"id":"MKT-04","query":"이우에서 문구류 도매 가격과 MOQ를 알고 싶습니다.","intent":"market_research","required_keywords":["제품명","예상 수량","목표 단가"],"risk_topic":"supplier_confirmation"}
+{"id":"MKT-05","query":"중국 공장을 찾고 싶은데 어떤 자료를 보내야 하나요?","intent":"market_research","required_keywords":["제품명","사진/도면/레퍼런스","조사 목적"],"risk_topic":"supplier_confirmation"}
+{"id":"DEF-01","query":"중국에서 받은 제품 중 15%가 파손됐어요. 어떻게 대응해야 하나요?","intent":"defect_claim","required_keywords":["불량 사진/영상","전체 수량","계약/주문 자료"],"risk_topic":"liability"}
+{"id":"DEF-02","query":"납품받은 라벨 인쇄 색상이 샘플과 다릅니다. 환불 받을 수 있나요?","intent":"defect_claim","required_keywords":["불량 사진/영상","계약/주문 자료","검품 여부"],"risk_topic":"liability"}
+{"id":"DEF-03","query":"공장에서 보낸 물건 일부가 작동하지 않습니다. 클레임 문구를 작성하고 싶어요.","intent":"defect_claim","required_keywords":["불량 사진/영상","불량 수량","전체 수량"],"risk_topic":"liability"}
+{"id":"DEF-04","query":"배송 중 박스가 찌그러지고 내용물이 깨졌습니다.","intent":"defect_claim","required_keywords":["불량 사진/영상","수령일","전체 수량"],"risk_topic":"logistics_damage"}
+{"id":"DEF-05","query":"검품 없이 출고했는데 불량이 많습니다. 중국 업체에 보상 요구 가능한가요?","intent":"defect_claim","required_keywords":["불량 사진/영상","계약/주문 자료","불량 수량"],"risk_topic":"liability"}
+{"id":"LOG-01","query":"이 제품 한국 수입할 때 KC 인증이 필요한지 확인 가능한가요?","intent":"logistics_customs","required_keywords":["제품명","HS code 또는 재질","인증/라벨 필요 여부"],"risk_topic":"certification"}
+{"id":"LOG-02","query":"원산지 라벨 작업도 중국에서 해서 받을 수 있나요?","intent":"logistics_customs","required_keywords":["제품명","수량/중량/부피","배송 조건"],"risk_topic":"labeling"}
+{"id":"LOG-03","query":"해운으로 보내면 얼마나 걸리고 비용은 어느 정도인가요?","intent":"logistics_customs","required_keywords":["제품명","수량/중량/부피","목적지"],"risk_topic":"shipping"}
+{"id":"LOG-04","query":"통관 문제 없이 들어올 수 있는 상품인지 알고 싶습니다.","intent":"logistics_customs","required_keywords":["제품명","HS code 또는 재질","인증/라벨 필요 여부"],"risk_topic":"customs"}
+{"id":"LOG-05","query":"중국 내륙운송부터 한국 배송까지 한 번에 가능한가요?","intent":"logistics_customs","required_keywords":["제품명","수량/중량/부피","목적지"],"risk_topic":"shipping"}
+{"id":"GEN-01","query":"중국어 계약서를 법적으로 검토해주실 수 있나요?","intent":"general","required_keywords":["문의 목적","제품 정보"],"risk_topic":"out_of_scope"}
+{"id":"GEN-02","query":"아마존 판매 광고 운영도 대행하시나요?","intent":"general","required_keywords":["문의 목적"],"risk_topic":"out_of_scope"}
+{"id":"GEN-03","query":"중국 회사와 처음 거래하는데 어디서부터 시작해야 하나요?","intent":"general","required_keywords":["문의 목적","제품 정보","예상 수량"],"risk_topic":"general_guidance"}
