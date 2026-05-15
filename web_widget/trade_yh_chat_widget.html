@@ -1,0 +1,48 @@
+<!-- Paste this into a test page on trade-yh.com after deploying the API server. -->
+<div id="trade-yh-agent" style="max-width:420px;border:1px solid #ddd;padding:16px;font-family:Arial,sans-serif">
+  <div style="font-weight:700;margin-bottom:8px">중한무역 AI 상담</div>
+  <div id="trade-yh-log" style="height:260px;overflow:auto;border:1px solid #eee;padding:10px;margin-bottom:8px;font-size:14px"></div>
+  <textarea id="trade-yh-message" rows="3" style="width:100%;box-sizing:border-box" placeholder="문의 내용을 입력하세요"></textarea>
+  <button id="trade-yh-send" style="margin-top:8px;width:100%;height:36px">문의하기</button>
+</div>
+
+<script>
+  const TRADE_YH_AGENT_API = "https://api.trade-yh.com/api/chat";
+  const logEl = document.getElementById("trade-yh-log");
+  const messageEl = document.getElementById("trade-yh-message");
+  const sendEl = document.getElementById("trade-yh-send");
+
+  function addMessage(label, text) {
+    const item = document.createElement("div");
+    item.style.margin = "0 0 10px";
+    item.innerHTML = `<strong>${label}</strong><br>${text.replace(/\n/g, "<br>")}`;
+    logEl.appendChild(item);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  sendEl.addEventListener("click", async () => {
+    const message = messageEl.value.trim();
+    if (!message) return;
+
+    addMessage("고객", message);
+    messageEl.value = "";
+    sendEl.disabled = true;
+    sendEl.textContent = "답변 생성 중...";
+
+    try {
+      const response = await fetch(TRADE_YH_AGENT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      const data = await response.json();
+      addMessage("AI 상담", data.answer || "답변을 생성하지 못했습니다.");
+    } catch (error) {
+      addMessage("AI 상담", "현재 상담 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      sendEl.disabled = false;
+      sendEl.textContent = "문의하기";
+    }
+  });
+</script>
+

@@ -61,6 +61,44 @@ python experiments/run_proposed_agent.py
 python experiments/evaluate.py
 ```
 
+## Run as Website API
+
+For `https://www.trade-yh.com`, run the agent as a FastAPI server and connect the homepage chat widget to `/api/chat`.
+
+Local test:
+
+```powershell
+uvicorn app.server:app --host 127.0.0.1 --port 8000
+```
+
+Health check:
+
+```powershell
+curl http://127.0.0.1:8000/health
+```
+
+Chat API:
+
+```powershell
+curl -X POST http://127.0.0.1:8000/api/chat -H "Content-Type: application/json" -d "{\"message\":\"1688 링크가 있는데 구매대행 가능한가요?\"}"
+```
+
+Production example:
+
+```text
+https://api.trade-yh.com/api/chat
+```
+
+When deploying with a paid model/API, set environment variables on the server:
+
+```text
+OPENAI_API_KEY=your_api_key
+TRADECARE_USE_LLM=true
+TRADECARE_MODEL=gpt-4.1-mini
+```
+
+The example homepage widget is in `web_widget/trade_yh_chat_widget.html`. Change `TRADE_YH_AGENT_API` to your deployed API URL.
+
 The evaluation dataset contains 30 trade customer-support cases across OEM/ODM, purchasing agency, market research, defect handling, logistics/customs, and out-of-scope requests.
 
 ## Baselines
@@ -90,4 +128,3 @@ The evaluation dataset contains 30 trade customer-support cases across OEM/ODM, 
 ## Limitations and Ethics
 
 This system should not make final legal, customs, certification, or liability decisions. It is designed to collect information, provide grounded procedural guidance, and recommend human review when needed. The agent must avoid promising availability, price, lead time, refund, customs clearance, or certification outcomes before supplier and expert confirmation.
-
