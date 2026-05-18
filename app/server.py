@@ -6,6 +6,8 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.agents.orchestrator import TradeCareOrchestrator
@@ -13,6 +15,7 @@ from app.agents.orchestrator import TradeCareOrchestrator
 
 ROOT = Path(__file__).resolve().parents[1]
 KNOWLEDGE_DIR = ROOT / "data" / "knowledge_base"
+STATIC_DIR = ROOT / "app" / "static"
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -41,6 +44,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 agent = TradeCareOrchestrator(
     KNOWLEDGE_DIR,
     use_llm=env_flag("TRADECARE_USE_LLM", default=False),
@@ -59,6 +64,11 @@ class ChatResponse(BaseModel):
     missing_fields: list[str]
     critic_score: int
     trace: dict[str, Any] | None = None
+
+
+@app.get("/")
+def index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/health")
@@ -80,4 +90,3 @@ def chat(request: ChatRequest) -> ChatResponse:
         critic_score=int(result["critic_score"]),
         trace=result if request.include_trace else None,
     )
-

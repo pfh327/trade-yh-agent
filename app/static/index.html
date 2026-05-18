@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trade YH Agent</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="중한무역 AI 상담 앱">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Yoon Hang Trade</p>
+            <h1>중한무역 고객센터 Agent</h1>
+          </div>
+          <div class="status-pill" id="status-pill">
+            <span class="status-dot"></span>
+            <span id="status-text">연결 확인 중</span>
+          </div>
+        </header>
+
+        <section class="content-grid">
+          <aside class="side-panel">
+            <div class="panel-section">
+              <h2>상담 유형</h2>
+              <div class="intent-list">
+                <button class="example-button" data-query="로고 들어간 의류 라벨 3만 개 제작하고 싶은데 가능한가요?">OEM/ODM</button>
+                <button class="example-button" data-query="1688 링크가 있는데 한국까지 구매대행 가능한가요? 수량은 500개입니다.">구매대행</button>
+                <button class="example-button" data-query="이우시장에 있는 판촉물 가격 조사 가능할까요?">시장조사</button>
+                <button class="example-button" data-query="중국에서 받은 제품 중 15%가 파손됐어요. 어떻게 대응해야 하나요?">불량대응</button>
+                <button class="example-button" data-query="이 제품 한국 수입할 때 KC 인증이 필요한지 확인 가능한가요?">통관/인증</button>
+              </div>
+            </div>
+
+            <div class="panel-section metrics">
+              <h2>Agent 상태</h2>
+              <dl>
+                <div>
+                  <dt>Intent</dt>
+                  <dd id="metric-intent">-</dd>
+                </div>
+                <div>
+                  <dt>Critic</dt>
+                  <dd id="metric-score">-</dd>
+                </div>
+                <div>
+                  <dt>LLM</dt>
+                  <dd id="metric-llm">-</dd>
+                </div>
+              </dl>
+            </div>
+          </aside>
+
+          <section class="chat-panel">
+            <div class="chat-log" id="chat-log" aria-live="polite">
+              <article class="message agent">
+                <div class="message-meta">AI 상담</div>
+                <div class="message-body">안녕하세요. 중한무역 상담을 시작합니다.</div>
+              </article>
+            </div>
+
+            <form class="composer" id="chat-form">
+              <textarea id="message-input" name="message" rows="4" maxlength="4000" placeholder="예: 1688 링크가 있는데 한국까지 구매대행 가능한가요? 수량은 500개입니다."></textarea>
+              <div class="composer-row">
+                <label class="trace-toggle">
+                  <input type="checkbox" id="trace-toggle" />
+                  <span>Trace</span>
+                </label>
+                <button type="submit" id="send-button">전송</button>
+              </div>
+            </form>
+          </section>
+
+          <aside class="inspector">
+            <div class="panel-section">
+              <h2>필수 확인 정보</h2>
+              <ul class="missing-list" id="missing-list">
+                <li>상담 후 표시됩니다.</li>
+              </ul>
+            </div>
+
+            <div class="panel-section">
+              <h2>RAG / Reflection</h2>
+              <pre id="trace-output">대기 중</pre>
+            </div>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
