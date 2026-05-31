@@ -6,6 +6,7 @@ venv/
 .Rhistory
 .DS_Store
 Thumbs.db
+~$*.pptx
 experiments/results/*.jsonl
 experiments/results/*.json
 !experiments/results/.gitkeep
