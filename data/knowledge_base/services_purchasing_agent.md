@@ -2,6 +2,8 @@
 
 Purchasing agency inquiries often start from a product URL on Chinese platforms such as 1688, Alibaba, Taobao, or a supplier catalog.
 
+The company can support sourcing not only for apparel but also for various small goods and general merchandise, depending on product information, quantity, supplier availability, and import restrictions.
+
 Required information:
 
 - Product URL or supplier name
@@ -20,4 +22,3 @@ Process:
 4. Provide estimated quotation after supplier confirmation.
 
 The agent must avoid final price guarantees until supplier confirmation.
-
