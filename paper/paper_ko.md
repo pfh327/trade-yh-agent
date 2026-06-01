@@ -24,11 +24,19 @@ B2B 무역대행 고객은 실무적으로 바로 활용할 수 있는 답변을
 
 ## 4. 방법론
 
-TradeCare-Agent는 Intake Agent, Retrieval Agent, Trade Specialist Agent, Risk Agent, Critic Agent의 다섯 Agent로 구성된다.
+TradeCare-Agent는 Intake Agent, Retrieval Agent, Trade Specialist Agent, Risk Agent, Critic Agent의 다섯 개 Agent로 구성된다. 각 Agent는 중한 B2B 무역 상담에서 발생하는 서로 다른 실패 유형을 통제하기 위해 분리하였다.
 
-Intake Agent는 고객 문의의 의도를 분류하고 누락된 필수 정보를 식별한다. Retrieval Agent는 재현 가능한 TF-IDF 검색기를 사용하여 로컬 Markdown 지식 문서를 검색한다. Trade Specialist Agent는 접수 결과와 검색된 문맥을 활용하여 고객에게 전달할 답변 초안을 작성한다. Risk Agent는 무조건적인 가능 여부, 환불 보장, 통관 보장 등 안전하지 않은 표현을 수정한다. Critic Agent는 답변 품질을 평가하고 가벼운 Reflection 단계를 수행한다.
+**표 1. 5-Agent 아키텍처와 설계 근거**
 
-다섯 Agent를 사용하는 이유는 중한 무역 지원 업무에 서로 다른 실패 지점이 존재하기 때문이다. Intake 실패는 제품 사진, 수량, 사양, 검수 기록, 배송 정보 누락으로 이어질 수 있다. Retrieval 실패는 회사의 문서화된 서비스 범위를 반영하지 못한 근거 없는 답변으로 이어질 수 있다. Drafting 실패는 고객이 실제로 행동하기 어려운 답변을 만들 수 있다. Risk 실패는 공급 가능 여부, 가격, 납기, 통관, 인증, 환불, 보상에 대해 과도하게 확정하는 문제를 만들 수 있다. Reflection 실패는 이러한 문제를 최종 단계에서 확인하지 못하게 한다. 역할을 분리하면 각 실패 지점을 명확히 드러낼 수 있고, 단일 호출 응답과 구조화된 Multi-Agent workflow를 비교할 수 있다.
+| Agent | 주요 역할 | 필요한 이유 | 주요 출력 |
+| --- | --- | --- | --- |
+| Intake Agent | 고객 문의 의도 분류 및 누락 필수 정보 추출 | 무역 문의는 수량, 제품 사진, 사양, 배송지, 불량 증빙 등이 빠진 경우가 많아 이후 답변의 정확도가 떨어질 수 있음 | 의도 라벨 및 필수 정보 체크리스트 |
+| Retrieval Agent | 로컬 RAG 지식베이스에서 서비스/정책 문서 검색 | 단일 LLM은 윤항무역의 실제 서비스 범위가 아니라 일반 지식으로 답할 위험이 있음 | 관련 지식 문서 조각 |
+| Trade Specialist Agent | 의도와 검색 문서를 바탕으로 고객 응대 답변 초안 작성 | 고객이 바로 다음 행동을 할 수 있도록 실무형 답변이 필요함 | 초기 고객 답변 |
+| Risk Agent | 확정 표현 제거 및 확인 필요 문구 추가 | 단가, MOQ, 납기, 통관, 인증, 환불, 보상은 공급처/담당자 확인 전 확정할 수 없음 | 위험 표현이 완화된 답변 |
+| Critic Agent | 답변의 완성도, 근거성, 다음 단계 명확성을 점검하고 필요 시 수정 지시 | Reflection을 통해 필수 정보 누락과 정책 불일치를 최종 점검함 | 최종 검토 답변 및 품질 점수 |
+
+이 5-Agent 구조가 필요한 이유는 실패 유형마다 필요한 통제 방식이 다르기 때문이다. Intake 실패는 필수 정보 누락으로 이어지고, Retrieval 실패는 회사 서비스 범위와 맞지 않는 답변을 만들 수 있다. Drafting 실패는 고객이 실행하기 어려운 답변을 만들며, Risk 실패는 가격, 납기, 통관, 인증, 환불, 보상에 대한 과도한 약속으로 이어질 수 있다. Critic/Reflection 실패는 이러한 문제를 최종적으로 걸러내지 못하게 한다. 따라서 역할을 분리한 구조는 단일 LLM 호출보다 투명하고, 어느 구성요소가 성능 향상에 기여하는지도 설명하기 쉽다.
 
 ### RAG 지식 베이스 출처
 
@@ -79,17 +87,27 @@ Baseline은 다음과 같다.
 
 ### 아키텍처별 성능 비교
 
-표 1은 세 가지 시스템의 아키텍처 수준 성능 비교를 정리한 것이다. 이 비교의 목적은 각 구성요소가 안전하고 완전한 무역 상담 답변에 어떤 기여를 하는지 보여주는 것이다.
+아래 표는 동일한 30개 중한 B2B 고객 상담 벤치마크에서 세 가지 시스템을 비교한 결과이다. Baseline LLM은 검색이나 Reflection 없이 단일 답변을 생성한다. RAG-only Baseline은 동일한 로컬 지식베이스를 사용하지만 Risk Agent와 Critic Agent를 제거한다. TradeCare-Agent는 전체 5-Agent 구조를 사용한다.
 
-| 시스템 | 아키텍처 | Intent Accuracy | Grounding Proxy | Required-Info Coverage | Overpromise Rate | Human-Review Signal |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Baseline LLM | 검색이나 Reflection 없는 직접 단일 응답 | 0.100 | 0.000 | 0.139 | 0.000 | 1.000 |
-| Baseline RAG | Intake 분류 + Retrieval, Risk/Critic loop 없음 | 1.000 | 0.900 | 0.678 | 0.000 | 1.000 |
-| TradeCare-Agent | Intake + Retrieval + Specialist + Risk + Critic | 1.000 | 0.900 | 0.967 | 0.000 | 1.000 |
+**표 4. 시스템별 주요 성능 비교**
 
-비교 결과, 검색만 추가해도 직접 단일 응답 baseline보다 근거성과 필수 정보 포함률이 개선된다. 그러나 전체 Multi-Agent workflow는 Specialist, Risk, Critic 단계를 통해 업무별 누락 정보를 명시적으로 요청하고 최종 답변을 검토하기 때문에 required-information coverage가 0.678에서 0.967로 추가 향상된다. 본 프로젝트의 제출용 deterministic run에서는 baseline도 보수적인 표현을 사용했기 때문에 overpromise rate가 모두 0으로 나타났다. 따라서 본 실험에서는 required-information coverage가 아키텍처 차이를 가장 잘 보여주는 핵심 지표이다.
+| 시스템 | 아키텍처 | 평가 데이터셋 | Intent Accuracy | Grounding Proxy | Required-Info Coverage | Overpromise Rate | Human-Review Signal |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline LLM | 검색/Reflection 없는 단일 LLM 답변 | 동일 30개 사례 | 0.100 | 0.000 | 0.139 | 0.000 | 1.000 |
+| RAG-only Baseline | Intake + RAG 검색, Risk/Critic Reflection 없음 | 동일 30개 사례 | 1.000 | 0.900 | 0.678 | 0.000 | 1.000 |
+| TradeCare-Agent | Intake + Retrieval + Specialist + Risk + Critic | 동일 30개 사례 | 1.000 | 0.900 | 0.967 | 0.000 | 1.000 |
 
-이 비교는 ablation-style 결과로도 해석할 수 있다. RAG를 제거하면 회사 정책 기반 근거성이 약해진다. Risk Agent를 제거하면 단가, MOQ, 납기, 통관, 인증, 환불, 보상에 대한 부적절한 확정 표현을 통제하기 어렵다. Critic Agent를 제거하면 최종 답변이 필수 접수 정보를 실제로 포함했는지 되돌아보는 Reflection 능력이 약해진다. 따라서 전체 아키텍처는 더 높은 점수뿐 아니라 무역 상담 실패 지점을 더 명확히 통제한다는 점에서 정당화된다.
+**표 5. 구성요소 기여도 및 Ablation-style 해석**
+
+| 제거/비교 구성요소 | 예상되는 약점 | 본 프로젝트에서의 관찰 결과 |
+| --- | --- | --- |
+| RAG 없음, 단일 LLM만 사용 | 회사 서비스 범위와 무역 필수 정보에 대한 근거성이 약함 | Required-Info Coverage가 0.139로 낮음 |
+| RAG만 사용, Risk/Critic 없음 | 지식 검색은 가능하지만 누락 필드와 위험 표현을 체계적으로 검토하지 못함 | Coverage가 0.678로 개선되지만 Full Agent보다 낮음 |
+| Risk Agent 제거 | 가격, MOQ, 납기, 통관, 인증, 환불, 보상에 대한 미확인 약속 위험 증가 | 위험 문구 통제가 약해짐 |
+| Critic Agent 제거 | 필수 정보와 다음 단계가 충분한지 최종 Reflection이 부족함 | 누락 정보 점검 능력이 약해짐 |
+| Full TradeCare-Agent | RAG 근거화, 전문가 답변, 위험 필터링, Reflection을 모두 결합 | Required-Info Coverage가 0.967에 도달 |
+
+비교 결과, RAG만 추가해도 단일 LLM 대비 근거성과 필수 정보 포함률이 개선된다. 그러나 전체 Multi-Agent 구조는 Specialist, Risk, Critic 단계가 작업별 누락 정보를 명시적으로 요청하고 최종 답변을 검토하기 때문에 Required-Info Coverage가 0.678에서 0.967로 추가 상승하였다. 본 deterministic evaluation에서는 보수적 프롬프트를 사용했기 때문에 모든 시스템의 Overpromise Rate가 0으로 나타났고, 따라서 아키텍처 간 차이를 보여주는 가장 중요한 지표는 Required-Info Coverage이다.
 
 ### 정성 비교
 
@@ -115,55 +133,43 @@ TradeCare-Agent는 세 단계를 결합하여 응답을 개선한다. 먼저 문
 
 ## 8. 평가 프롬프트 및 재현성
 
-본 프로젝트는 deterministic script 기반 정량 지표 외에도, 사람 평가 또는 LLM-as-a-judge 방식의 정성 검토에 사용할 수 있는 평가 프롬프트를 정의하였다. 이 프롬프트는 `experiments/results/summary.json`의 수치를 재현하기 위한 필수 요소는 아니며, 답변 품질을 일관되게 검토하기 위한 문서화된 기준이다.
+본 프로젝트는 deterministic script 기반 정량 지표 외에도, 사람 평가 또는 LLM-as-a-judge 방식의 정성 검토에 사용할 수 있는 평가 프롬프트를 정의하였다. 평가자가 빠르게 확인할 수 있도록 프롬프트 내용을 긴 문단이 아니라 표 형식으로 정리하였다.
 
-### Reflection/Critic 평가 프롬프트
+**표 6. Reflection/Critic 평가 프롬프트 구조**
 
-```text
-당신은 중한 B2B 무역 고객지원 Agent의 답변을 평가하는 평가자입니다.
+| 프롬프트 요소 | 평가에 사용되는 내용 |
+| --- | --- |
+| 평가자 역할 | 중한 B2B 무역 고객센터 Agent의 답변을 평가하는 평가자 |
+| 입력 1 | 고객 문의 |
+| 입력 2 | 검색된 RAG 지식 문서 조각 |
+| 입력 3 | Agent가 생성한 고객 응대 답변 |
+| 입력 4 | Gold required information items |
+| 출력 형식 | 점수, PASS/FAIL, 코멘트, 수정 지시를 포함한 JSON 객체 |
 
-다음 정보를 받습니다.
-1. 고객 문의
-2. 검색된 지식 문서 snippet
-3. Agent 답변
-4. Gold required information items
+**표 7. Reflection/Critic 평가 기준**
 
-아래 기준으로 답변을 평가하세요.
+| 평가 기준 | 평가 질문 | 점수/판정 |
+| --- | --- | --- |
+| 필수 정보 포함률 | 답변이 제품 사진, 사양, 수량, 로고/패키지 파일, 희망 납기, 불량 증빙, 주문 기록, 통관/인증 맥락 등 업무 수행에 필요한 정보를 요청하는가? | 1-5 |
+| 근거성 | 답변이 검색된 회사/서비스 지식과 일치하며, 지식베이스 밖의 근거 없는 주장을 피하는가? | 1-5 |
+| 위험 통제 | 단가, MOQ, 납기, 통관, 인증, 환불, 교환, 보상을 확인 전 확정하지 않는가? | 1-5 |
+| 실행 가능성 | 고객 또는 담당자가 바로 다음 행동을 할 수 있도록 명확한 다음 단계를 제시하는가? | 1-5 |
+| 사람 검토 신호 | 통관, 인증, 법적 책임, 환불, 보상, 공급처 책임이 포함된 경우 담당자/전문가 확인 필요성을 표시하는가? | PASS / FAIL |
 
-1. 필수 정보 포함률:
-   답변이 해당 업무에 필요한 정보를 요청했는가?
-   예: 제품 사진, 사양, 수량, 로고/패키지 파일, 희망 납기,
-   불량 증빙, 주문 기록, 통관/인증 맥락.
+**표 8. 정성 평가 JSON 반환 형식**
 
-2. 근거성:
-   답변이 검색된 회사/서비스 지식과 일치하는가?
-   지식 베이스를 넘어선 근거 없는 주장을 피했는가?
+| 필드 | 타입 | 의미 |
+| --- | --- | --- |
+| `required_info_coverage` | 정수 1-5 | 필수 정보 요청의 완성도 |
+| `groundedness` | 정수 1-5 | 검색 지식과의 일치도 |
+| `risk_control` | 정수 1-5 | 미확인 무역 약속 회피 정도 |
+| `actionability` | 정수 1-5 | 다음 단계의 명확성 |
+| `human_review_signal` | PASS / FAIL | 사람 또는 전문가 검토 필요성을 적절히 표시했는지 여부 |
+| `overall_comment` | 짧은 문장 | 평가 이유 설명 |
+| `revision_needed` | Boolean | 답변 수정 필요 여부 |
+| `revision_instruction` | 짧은 문장 | 수정이 필요한 경우 구체적 지시 |
 
-3. 리스크 통제:
-   공급처 확인 전 단가, MOQ, 납기, 통관, 인증, 환불, 교환,
-   보상을 확정하지 않았는가?
-
-4. 실행 가능성:
-   고객 또는 운영자가 다음에 무엇을 해야 하는지 명확한가?
-
-5. 사람 검토 신호:
-   통관, 인증, 법적 책임, 환불, 보상, 공급처 책임과 관련된 경우
-   담당자 또는 전문가 검토 필요성을 표시했는가?
-
-반환 형식:
-{
-  "required_info_coverage": 1-5,
-  "groundedness": 1-5,
-  "risk_control": 1-5,
-  "actionability": 1-5,
-  "human_review_signal": "PASS" 또는 "FAIL",
-  "overall_comment": "짧은 설명",
-  "revision_needed": true 또는 false,
-  "revision_instruction": "수정이 필요한 경우 구체적 지시"
-}
-```
-
-재현 가능한 정량 평가는 keyword 기반 required-information coverage를 사용한다. 위 프롬프트는 답변 품질에 대한 정성 검토를 지원한다. 모든 평가 케이스, 생성 결과, 평가 스크립트는 저장소에 포함되어 있으므로 보고된 비교 결과를 재현하거나 확장할 수 있다.
+정량 평가 스크립트는 재현성을 위해 keyword-based required-information coverage를 사용하고, 위 평가 프롬프트는 답변 품질의 정성 평가에 사용된다. 평가 사례, 생성 결과, 프롬프트, 스크립트는 모두 GitHub 저장소에 포함되어 있어 결과를 재현하거나 확장할 수 있다.
 
 ## 9. 결론
 

@@ -24,11 +24,19 @@ Target intents are OEM/ODM, purchasing agency, market research, defect claim, lo
 
 ## 4. Method
 
-TradeCare-Agent consists of five agents: Intake Agent, Retrieval Agent, Trade Specialist Agent, Risk Agent, and Critic Agent.
+TradeCare-Agent consists of five agents: Intake Agent, Retrieval Agent, Trade Specialist Agent, Risk Agent, and Critic Agent. The architecture is designed so that each stage handles a different failure mode in Korea-China B2B trade consulting.
 
-The Intake Agent classifies the inquiry and identifies required missing fields. The Retrieval Agent searches local markdown knowledge documents using a reproducible TF-IDF retriever. The Trade Specialist Agent drafts a customer-facing answer using intake results and retrieved contexts. The Risk Agent revises unsafe wording such as unconditional availability, guaranteed refund, or guaranteed customs clearance. The Critic Agent evaluates answer quality and performs a lightweight reflection step.
+**Table 1. Five-Agent architecture and design rationale**
 
-We use five agents because Korea-China trade support has multiple distinct failure modes. Intake failures lead to missing product photos, quantity, specifications, inspection records, or delivery information. Retrieval failures lead to unsupported answers that do not reflect the company's documented service scope. Drafting failures make the answer hard for customers to act on. Risk failures can overpromise supplier availability, price, delivery, customs clearance, certification, refund, or compensation. Reflection failures leave these problems unchecked. Separating these roles makes each failure point explicit and allows the system to compare a single-call response against a structured Multi-Agent workflow.
+| Agent | Main Role | Why This Agent Is Needed | Main Output |
+| --- | --- | --- | --- |
+| Intake Agent | Classifies the customer intent and extracts missing required fields | Trade inquiries are often incomplete; missing quantity, product photos, specifications, delivery destination, or defect evidence can make later answers unreliable | Intent label and required-information checklist |
+| Retrieval Agent | Retrieves service and policy knowledge from the local RAG knowledge base | A single LLM may answer from general knowledge rather than Yoon Hang Trade's actual service scope | Top relevant knowledge snippets |
+| Trade Specialist Agent | Drafts the customer-facing answer using intent and retrieved context | The answer must be practical, polite, and operationally useful for B2B trade consultation | Initial customer response |
+| Risk Agent | Removes unsafe commitments and adds confirmation wording | Price, MOQ, delivery time, customs clearance, certification, refund, and compensation cannot be guaranteed before supplier/operator confirmation | Risk-filtered answer |
+| Critic Agent | Checks completeness, grounding, and next-step clarity, then requests revision if needed | Reflection prevents incomplete answers from being returned without checking required fields and policy consistency | Final reviewed answer and quality score |
+
+This five-agent design is necessary because each failure type requires a different control mechanism. Intake failures cause missing information. Retrieval failures cause unsupported answers. Drafting failures reduce actionability. Risk failures can overpromise trade outcomes. Reflection failures leave these problems unchecked. Separating the roles makes the workflow more transparent than a single LLM call and allows the evaluation to identify which component contributes to answer quality.
 
 ### RAG Knowledge Base Sources
 
@@ -79,17 +87,27 @@ Results:
 
 ### Architecture-Level Performance Comparison
 
-Table 1 summarizes the architecture-level comparison across the three evaluated systems. The purpose is to show whether each added architectural component contributes to safer and more complete trade-consulting answers.
+The following tables present the architecture comparison in the same benchmark setting. All systems were evaluated on the same 30 Korea-China B2B customer-support cases. The baseline LLM uses a direct single-response prompt without retrieval or reflection. The RAG-only baseline uses the same local knowledge base but removes the Risk and Critic stages. TradeCare-Agent uses the full five-agent workflow.
 
-| System | Architecture | Intent Accuracy | Grounding Proxy | Required-Info Coverage | Overpromise Rate | Human-Review Signal |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Baseline LLM | Direct single response without retrieval or reflection | 0.100 | 0.000 | 0.139 | 0.000 | 1.000 |
-| Baseline RAG | Intake classification + retrieval, no risk/critic loop | 1.000 | 0.900 | 0.678 | 0.000 | 1.000 |
-| TradeCare-Agent | Intake + Retrieval + Specialist + Risk + Critic | 1.000 | 0.900 | 0.967 | 0.000 | 1.000 |
+**Table 4. System-level performance comparison**
 
-The comparison indicates that retrieval alone improves grounding and required-information coverage compared with a direct single-response baseline. However, the full Multi-Agent workflow further improves required-information coverage from 0.678 to 0.967 because the Specialist, Risk, and Critic stages explicitly request task-specific missing fields and verify the answer before final output. In this project, overpromise rate is zero for all submitted deterministic runs because the baseline scripts already use conservative wording; therefore, required-information coverage is the most informative metric for comparing the architectures.
+| System | Architecture | Dataset | Intent Accuracy | Grounding Proxy | Required-Info Coverage | Overpromise Rate | Human-Review Signal |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline LLM | Direct single LLM response | Same 30 cases | 0.100 | 0.000 | 0.139 | 0.000 | 1.000 |
+| RAG-only Baseline | Intake + RAG retrieval, without Risk/Critic reflection | Same 30 cases | 1.000 | 0.900 | 0.678 | 0.000 | 1.000 |
+| TradeCare-Agent | Intake + Retrieval + Specialist + Risk + Critic | Same 30 cases | 1.000 | 0.900 | 0.967 | 0.000 | 1.000 |
 
-We also interpret the comparison as an ablation-style result. Removing RAG reduces company-policy grounding. Removing the Risk Agent weakens control over unsupported commitments, such as final price, MOQ, delivery time, customs clearance, certification, refund, or compensation. Removing the Critic Agent weakens reflection on whether the answer actually includes the required intake fields. Therefore, the full architecture is justified not only by a higher score but also by clearer operational control over trade-consulting failure modes.
+**Table 5. Component contribution and ablation-style interpretation**
+
+| Removed / Compared Component | Expected Weakness | Observed Effect in This Project |
+| --- | --- | --- |
+| No RAG, direct LLM only | Weak grounding in company service scope and required trade intake fields | Required-information coverage drops to 0.139 |
+| RAG without Risk/Critic | Retrieves useful knowledge but does not systematically verify missing fields or unsafe commitments | Required-information coverage improves to 0.678 but remains below the full agent |
+| Risk Agent removed | Higher chance of unsupported claims about price, MOQ, delivery, customs, certification, refund, or compensation | Risk-sensitive wording becomes less controlled |
+| Critic Agent removed | No final reflection on whether the answer contains required fields and a clear next step | Missing-field checking becomes weaker |
+| Full TradeCare-Agent | Combines grounding, specialist drafting, risk filtering, and reflection | Required-information coverage reaches 0.967 |
+
+The comparison shows that retrieval alone improves grounding and required-information coverage compared with a direct baseline. However, the full Multi-Agent workflow further improves required-information coverage because the Specialist, Risk, and Critic stages explicitly request task-specific missing fields and verify the answer before final output. In this deterministic evaluation, overpromise rate is zero for all submitted runs because the prompts use conservative wording; therefore, required-information coverage is the most informative metric for distinguishing the architectures.
 
 ### Qualitative Comparison
 
@@ -115,55 +133,43 @@ Potential risks include hallucinated company capability, incorrect customs advic
 
 ## 8. Evaluation Prompt and Reproducibility
 
-In addition to the deterministic script-based metrics, the project defines an evaluation prompt that can be used for human evaluation or LLM-as-a-judge style qualitative review. This prompt is not required to reproduce the numeric results in `experiments/results/summary.json`; instead, it documents how answer quality can be reviewed consistently.
+In addition to the deterministic script-based metrics, the project defines an evaluation prompt that can be used for human evaluation or LLM-as-a-judge qualitative review. To make the prompt easier to inspect, the prompt content is organized as tables rather than only as a long text block.
 
-### Reflection/Critic Evaluation Prompt
+**Table 6. Reflection/Critic evaluation prompt structure**
 
-```text
-You are an evaluator for a Korea-China B2B trade customer-support agent.
+| Prompt Element | Content Used in Evaluation |
+| --- | --- |
+| Evaluator role | You are an evaluator for a Korea-China B2B trade customer-support agent. |
+| Input 1 | Customer inquiry |
+| Input 2 | Retrieved knowledge snippets |
+| Input 3 | Agent answer |
+| Input 4 | Gold required information items |
+| Output format | JSON object containing scores, pass/fail signal, comment, and revision instruction |
 
-Given:
-1. Customer inquiry
-2. Retrieved knowledge snippets
-3. Agent answer
-4. Gold required information items
+**Table 7. Evaluation criteria used by the Reflection/Critic prompt**
 
-Evaluate the answer using the following criteria:
+| Criterion | Evaluation Question | Score / Decision |
+| --- | --- | --- |
+| Required-information coverage | Does the answer request the information needed for the task, such as product photo, specification, quantity, logo/package file, desired delivery date, defect evidence, order record, or customs/certification context? | 1-5 |
+| Groundedness | Is the answer consistent with the retrieved company/service knowledge and does it avoid unsupported claims beyond the knowledge base? | 1-5 |
+| Risk control | Does the answer avoid promising final price, MOQ, lead time, customs clearance, certification, refund, replacement, or compensation before confirmation? | 1-5 |
+| Actionability | Does the answer provide a clear next step for the customer or operator? | 1-5 |
+| Human-review signal | Does the answer indicate human or expert review when the issue involves customs, certification, legal responsibility, refund, compensation, or supplier liability? | PASS / FAIL |
 
-1. Required-information coverage:
-   Does the answer request the information needed for the task?
-   Examples: product photo, specification, quantity, logo/package file,
-   desired delivery date, defect evidence, order record, customs/certification context.
+**Table 8. JSON return schema for qualitative evaluation**
 
-2. Groundedness:
-   Is the answer consistent with the retrieved company/service knowledge?
-   Does it avoid unsupported claims beyond the knowledge base?
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `required_info_coverage` | Integer 1-5 | Completeness of requested task information |
+| `groundedness` | Integer 1-5 | Consistency with retrieved knowledge |
+| `risk_control` | Integer 1-5 | Avoidance of unsupported trade commitments |
+| `actionability` | Integer 1-5 | Clarity of next step |
+| `human_review_signal` | PASS / FAIL | Whether escalation or expert review is appropriately indicated |
+| `overall_comment` | Short text | Explanation of the judgment |
+| `revision_needed` | Boolean | Whether answer revision is required |
+| `revision_instruction` | Short text | Concrete instruction for revision if needed |
 
-3. Risk control:
-   Does the answer avoid promising final price, MOQ, lead time, customs clearance,
-   certification, refund, replacement, or compensation before confirmation?
-
-4. Actionability:
-   Does the answer provide a clear next step for the customer or operator?
-
-5. Human-review signal:
-   Does the answer indicate human or expert review when the issue involves
-   customs, certification, legal responsibility, refund, compensation, or supplier liability?
-
-Return:
-{
-  "required_info_coverage": 1-5,
-  "groundedness": 1-5,
-  "risk_control": 1-5,
-  "actionability": 1-5,
-  "human_review_signal": "PASS" or "FAIL",
-  "overall_comment": "short explanation",
-  "revision_needed": true or false,
-  "revision_instruction": "specific revision if needed"
-}
-```
-
-The deterministic evaluation script uses keyword-based required-information coverage for reproducibility, while the above prompt supports qualitative review of answer quality. All evaluation cases, generated outputs, and scripts are included in the repository so that the reported comparison can be reproduced or extended.
+The deterministic evaluation script uses keyword-based required-information coverage for reproducibility, while the above prompt supports qualitative review of answer quality. All evaluation cases, generated outputs, prompts, and scripts are included in the repository so that the reported comparison can be reproduced or extended.
 
 ## 9. Conclusion
 
