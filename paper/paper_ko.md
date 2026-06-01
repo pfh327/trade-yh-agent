@@ -77,6 +77,20 @@ Baseline은 다음과 같다.
 - Baseline RAG: required-information coverage 0.678
 - Proposed Multi-Agent + RAG + Reflection: required-information coverage 0.967
 
+### 아키텍처별 성능 비교
+
+표 1은 세 가지 시스템의 아키텍처 수준 성능 비교를 정리한 것이다. 이 비교의 목적은 각 구성요소가 안전하고 완전한 무역 상담 답변에 어떤 기여를 하는지 보여주는 것이다.
+
+| 시스템 | 아키텍처 | Intent Accuracy | Grounding Proxy | Required-Info Coverage | Overpromise Rate | Human-Review Signal |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline LLM | 검색이나 Reflection 없는 직접 단일 응답 | 0.100 | 0.000 | 0.139 | 0.000 | 1.000 |
+| Baseline RAG | Intake 분류 + Retrieval, Risk/Critic loop 없음 | 1.000 | 0.900 | 0.678 | 0.000 | 1.000 |
+| TradeCare-Agent | Intake + Retrieval + Specialist + Risk + Critic | 1.000 | 0.900 | 0.967 | 0.000 | 1.000 |
+
+비교 결과, 검색만 추가해도 직접 단일 응답 baseline보다 근거성과 필수 정보 포함률이 개선된다. 그러나 전체 Multi-Agent workflow는 Specialist, Risk, Critic 단계를 통해 업무별 누락 정보를 명시적으로 요청하고 최종 답변을 검토하기 때문에 required-information coverage가 0.678에서 0.967로 추가 향상된다. 본 프로젝트의 제출용 deterministic run에서는 baseline도 보수적인 표현을 사용했기 때문에 overpromise rate가 모두 0으로 나타났다. 따라서 본 실험에서는 required-information coverage가 아키텍처 차이를 가장 잘 보여주는 핵심 지표이다.
+
+이 비교는 ablation-style 결과로도 해석할 수 있다. RAG를 제거하면 회사 정책 기반 근거성이 약해진다. Risk Agent를 제거하면 단가, MOQ, 납기, 통관, 인증, 환불, 보상에 대한 부적절한 확정 표현을 통제하기 어렵다. Critic Agent를 제거하면 최종 답변이 필수 접수 정보를 실제로 포함했는지 되돌아보는 Reflection 능력이 약해진다. 따라서 전체 아키텍처는 더 높은 점수뿐 아니라 무역 상담 실패 지점을 더 명확히 통제한다는 점에서 정당화된다.
+
 ### 정성 비교
 
 본 연구는 답변 양상도 정성적으로 비교하였다. OEM/샘플 제작 문의에서 일반 GPT-style baseline은 제조에 대한 일반적인 안내를 제공하는 경향이 있다. 답변은 자연스러울 수 있지만, 제품 이미지, 상세 사양, 패턴, 수량, 로고/패키지 파일, 희망 납기, 배송지와 같은 업무별 접수 정보를 누락할 수 있다. 또한 공급처 확인 전에도 제작 가능성을 암시할 수 있다.
@@ -99,6 +113,58 @@ TradeCare-Agent는 세 단계를 결합하여 응답을 개선한다. 먼저 문
 
 잠재적 위험에는 회사 역량에 대한 환각, 부정확한 통관 조언, 고객 문서의 개인정보 유출, 책임 민감도가 높은 분쟁의 과도한 자동화가 포함된다. 완화 방안으로는 RAG 기반 근거화, 리스크 필터링, Critic Reflection, 사람 검토 단계, 명시적 불확실성 표현이 있다.
 
-## 8. 결론
+## 8. 평가 프롬프트 및 재현성
+
+본 프로젝트는 deterministic script 기반 정량 지표 외에도, 사람 평가 또는 LLM-as-a-judge 방식의 정성 검토에 사용할 수 있는 평가 프롬프트를 정의하였다. 이 프롬프트는 `experiments/results/summary.json`의 수치를 재현하기 위한 필수 요소는 아니며, 답변 품질을 일관되게 검토하기 위한 문서화된 기준이다.
+
+### Reflection/Critic 평가 프롬프트
+
+```text
+당신은 중한 B2B 무역 고객지원 Agent의 답변을 평가하는 평가자입니다.
+
+다음 정보를 받습니다.
+1. 고객 문의
+2. 검색된 지식 문서 snippet
+3. Agent 답변
+4. Gold required information items
+
+아래 기준으로 답변을 평가하세요.
+
+1. 필수 정보 포함률:
+   답변이 해당 업무에 필요한 정보를 요청했는가?
+   예: 제품 사진, 사양, 수량, 로고/패키지 파일, 희망 납기,
+   불량 증빙, 주문 기록, 통관/인증 맥락.
+
+2. 근거성:
+   답변이 검색된 회사/서비스 지식과 일치하는가?
+   지식 베이스를 넘어선 근거 없는 주장을 피했는가?
+
+3. 리스크 통제:
+   공급처 확인 전 단가, MOQ, 납기, 통관, 인증, 환불, 교환,
+   보상을 확정하지 않았는가?
+
+4. 실행 가능성:
+   고객 또는 운영자가 다음에 무엇을 해야 하는지 명확한가?
+
+5. 사람 검토 신호:
+   통관, 인증, 법적 책임, 환불, 보상, 공급처 책임과 관련된 경우
+   담당자 또는 전문가 검토 필요성을 표시했는가?
+
+반환 형식:
+{
+  "required_info_coverage": 1-5,
+  "groundedness": 1-5,
+  "risk_control": 1-5,
+  "actionability": 1-5,
+  "human_review_signal": "PASS" 또는 "FAIL",
+  "overall_comment": "짧은 설명",
+  "revision_needed": true 또는 false,
+  "revision_instruction": "수정이 필요한 경우 구체적 지시"
+}
+```
+
+재현 가능한 정량 평가는 keyword 기반 required-information coverage를 사용한다. 위 프롬프트는 답변 품질에 대한 정성 검토를 지원한다. 모든 평가 케이스, 생성 결과, 평가 스크립트는 저장소에 포함되어 있으므로 보고된 비교 결과를 재현하거나 확장할 수 있다.
+
+## 9. 결론
 
 TradeCare-Agent는 현실적인 중한 B2B 무역 고객 지원 과제에서 Multi-Agent 설계, RAG, Reflection을 결합할 수 있음을 보여준다. 본 프로젝트는 실행 가능한 코드, FastAPI 웹앱, 로컬 지식 문서, 프롬프트, 벤치마크 케이스, 20개 실제형 고객 질문 사례, baseline 비교, 재현 가능한 평가 스크립트, 발표자료, GitHub 저장소 산출물을 제공한다.

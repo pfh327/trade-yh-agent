@@ -77,6 +77,20 @@ Results:
 - Baseline RAG: 0.678 required-information coverage
 - Proposed Multi-Agent + RAG + Reflection: 0.967 required-information coverage
 
+### Architecture-Level Performance Comparison
+
+Table 1 summarizes the architecture-level comparison across the three evaluated systems. The purpose is to show whether each added architectural component contributes to safer and more complete trade-consulting answers.
+
+| System | Architecture | Intent Accuracy | Grounding Proxy | Required-Info Coverage | Overpromise Rate | Human-Review Signal |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline LLM | Direct single response without retrieval or reflection | 0.100 | 0.000 | 0.139 | 0.000 | 1.000 |
+| Baseline RAG | Intake classification + retrieval, no risk/critic loop | 1.000 | 0.900 | 0.678 | 0.000 | 1.000 |
+| TradeCare-Agent | Intake + Retrieval + Specialist + Risk + Critic | 1.000 | 0.900 | 0.967 | 0.000 | 1.000 |
+
+The comparison indicates that retrieval alone improves grounding and required-information coverage compared with a direct single-response baseline. However, the full Multi-Agent workflow further improves required-information coverage from 0.678 to 0.967 because the Specialist, Risk, and Critic stages explicitly request task-specific missing fields and verify the answer before final output. In this project, overpromise rate is zero for all submitted deterministic runs because the baseline scripts already use conservative wording; therefore, required-information coverage is the most informative metric for comparing the architectures.
+
+We also interpret the comparison as an ablation-style result. Removing RAG reduces company-policy grounding. Removing the Risk Agent weakens control over unsupported commitments, such as final price, MOQ, delivery time, customs clearance, certification, refund, or compensation. Removing the Critic Agent weakens reflection on whether the answer actually includes the required intake fields. Therefore, the full architecture is justified not only by a higher score but also by clearer operational control over trade-consulting failure modes.
+
 ### Qualitative Comparison
 
 We also compare the answer behavior qualitatively. For an OEM/sample-production inquiry, a general GPT-style baseline tends to provide broad generic guidance about manufacturing. It may be fluent, but it can omit task-specific intake information such as product images, detailed specifications, patterns, quantity, logo/package files, desired delivery date, and destination. It may also imply feasibility before supplier confirmation.
@@ -99,6 +113,58 @@ The system cannot make final legal, customs, certification, supplier liability, 
 
 Potential risks include hallucinated company capability, incorrect customs advice, privacy leakage in customer documents, and excessive automation of responsibility-sensitive disputes. Mitigations include retrieval grounding, risk filtering, critic reflection, human escalation, and explicit uncertainty wording.
 
-## 8. Conclusion
+## 8. Evaluation Prompt and Reproducibility
+
+In addition to the deterministic script-based metrics, the project defines an evaluation prompt that can be used for human evaluation or LLM-as-a-judge style qualitative review. This prompt is not required to reproduce the numeric results in `experiments/results/summary.json`; instead, it documents how answer quality can be reviewed consistently.
+
+### Reflection/Critic Evaluation Prompt
+
+```text
+You are an evaluator for a Korea-China B2B trade customer-support agent.
+
+Given:
+1. Customer inquiry
+2. Retrieved knowledge snippets
+3. Agent answer
+4. Gold required information items
+
+Evaluate the answer using the following criteria:
+
+1. Required-information coverage:
+   Does the answer request the information needed for the task?
+   Examples: product photo, specification, quantity, logo/package file,
+   desired delivery date, defect evidence, order record, customs/certification context.
+
+2. Groundedness:
+   Is the answer consistent with the retrieved company/service knowledge?
+   Does it avoid unsupported claims beyond the knowledge base?
+
+3. Risk control:
+   Does the answer avoid promising final price, MOQ, lead time, customs clearance,
+   certification, refund, replacement, or compensation before confirmation?
+
+4. Actionability:
+   Does the answer provide a clear next step for the customer or operator?
+
+5. Human-review signal:
+   Does the answer indicate human or expert review when the issue involves
+   customs, certification, legal responsibility, refund, compensation, or supplier liability?
+
+Return:
+{
+  "required_info_coverage": 1-5,
+  "groundedness": 1-5,
+  "risk_control": 1-5,
+  "actionability": 1-5,
+  "human_review_signal": "PASS" or "FAIL",
+  "overall_comment": "short explanation",
+  "revision_needed": true or false,
+  "revision_instruction": "specific revision if needed"
+}
+```
+
+The deterministic evaluation script uses keyword-based required-information coverage for reproducibility, while the above prompt supports qualitative review of answer quality. All evaluation cases, generated outputs, and scripts are included in the repository so that the reported comparison can be reproduced or extended.
+
+## 9. Conclusion
 
 TradeCare-Agent demonstrates how Multi-Agent design, RAG, and Reflection can be combined for a realistic Korea-China B2B trade customer-support task. The project provides runnable code, a FastAPI web app, local knowledge documents, prompts, benchmark cases, 20 realistic customer-question cases, baseline comparisons, reproducible evaluation scripts, presentation materials, and GitHub repository assets.
